@@ -20,7 +20,7 @@
 
 namespace mbed {
 
-TimerEvent::TimerEvent() {
+TimerEvent::TimerEvent() : event() {
     us_ticker_set_handler((&TimerEvent::irq));
 }
 
@@ -34,7 +34,7 @@ TimerEvent::~TimerEvent() {
 }
 
 // insert in to linked list
-void TimerEvent::insert(unsigned int timestamp) {
+void TimerEvent::insert(timestamp_t timestamp) {
     us_ticker_insert_event(&event, timestamp, (uint32_t)this);
 }
 

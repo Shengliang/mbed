@@ -37,6 +37,8 @@
 #include "fsl_enet_features.h"
 #include <assert.h>
 
+#ifndef MBED_NO_ENET
+
 /*!
  * @addtogroup enet_hal
  * @{
@@ -345,7 +347,7 @@ typedef struct ENETBdStruct
     uint16_t  reserved3;
     uint16_t  reserved4;
 } enet_bd_struct_t;
-
+#define TX_DESC_UPDATED_MASK  (0x8000)
 #else
 /*! @brief Defines the buffer descriptors structure for the Big-Endian system.*/
 typedef struct ENETBdStruct
@@ -366,6 +368,7 @@ typedef struct ENETBdStruct
     uint16_t  reserved3;
     uint16_t  reserved4;
 } enet_bd_struct_t;
+#define TX_DESC_UPDATED_MASK  (0x0080)
 #endif
 
 /*! @brief Defines the configuration structure for the 1588 PTP timer.*/
@@ -428,7 +431,7 @@ extern "C" {
  */
 static inline void enet_hal_reset_ethernet(uint32_t instance)
 {
-   assert(instance < HW_ENET_INSTANCE_COUNT);
+   // assert(instance < HW_ENET_INSTANCE_COUNT);
    
    HW_ENET_ECR_SET(instance, BM_ENET_ECR_RESET);
 }
@@ -443,7 +446,7 @@ static inline void enet_hal_reset_ethernet(uint32_t instance)
  */
 static inline bool enet_hal_is_reset_completed(uint32_t instance)
 {
-   assert(instance < HW_ENET_INSTANCE_COUNT);
+   // assert(instance < HW_ENET_INSTANCE_COUNT);
    
    return (BR_ENET_ECR_RESET(instance) == 0);
 }
@@ -462,7 +465,7 @@ static inline bool enet_hal_is_reset_completed(uint32_t instance)
  */
 static inline void enet_hal_enable_stop(uint32_t instance, bool isEnabled)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     BW_ENET_ECR_STOPEN(instance, isEnabled);
 }
 /*!
@@ -479,7 +482,7 @@ static inline void enet_hal_enable_stop(uint32_t instance, bool isEnabled)
  */
  static inline void enet_hal_enable_sleep(uint32_t instance, bool isEnabled)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     BW_ENET_ECR_SLEEP(instance, isEnabled);
     BW_ENET_ECR_MAGICEN(instance, isEnabled);
 }
@@ -533,7 +536,7 @@ void enet_hal_set_individual_hashtable(uint32_t instance, uint32_t crcValue, ene
  */
 static inline void enet_hal_enable_payloadcheck(uint32_t instance, bool isEnabled)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     BW_ENET_RCR_NLC(instance, isEnabled);
 }
 
@@ -551,7 +554,7 @@ static inline void enet_hal_enable_payloadcheck(uint32_t instance, bool isEnable
  */
 static inline void enet_hal_enable_txcrcforward(uint32_t instance, bool isEnabled)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     BW_ENET_TCR_CRCFWD(instance, !isEnabled);
 }
 
@@ -570,7 +573,7 @@ static inline void enet_hal_enable_txcrcforward(uint32_t instance, bool isEnable
  */
 static inline void enet_hal_enable_rxcrcforward(uint32_t instance, bool isEnabled)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     BW_ENET_RCR_CRCFWD(instance, !isEnabled);
 }
 /*!
@@ -585,7 +588,7 @@ static inline void enet_hal_enable_rxcrcforward(uint32_t instance, bool isEnable
  */
 static inline void enet_hal_enable_pauseforward(uint32_t instance, bool isEnabled)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);    
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     BW_ENET_RCR_PAUFWD(instance, isEnabled);
 }
 
@@ -601,7 +604,7 @@ static inline void enet_hal_enable_pauseforward(uint32_t instance, bool isEnable
  */
 static inline void enet_hal_enable_padremove(uint32_t instance, bool isEnabled)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     BW_ENET_RCR_PADEN(instance, isEnabled);
 }
 
@@ -619,7 +622,7 @@ static inline void enet_hal_enable_padremove(uint32_t instance, bool isEnabled)
  */
 static inline void enet_hal_enable_flowcontrol(uint32_t instance, bool isEnabled)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     BW_ENET_RCR_CFEN(instance, isEnabled);
     BW_ENET_RCR_FCE(instance, isEnabled);
 }
@@ -637,7 +640,7 @@ static inline void enet_hal_enable_flowcontrol(uint32_t instance, bool isEnabled
  */
 static inline void enet_hal_enable_broadcastreject(uint32_t instance, bool isEnabled)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);    
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     BW_ENET_RCR_BC_REJ(instance, isEnabled);
 }
 
@@ -654,7 +657,7 @@ static inline void enet_hal_enable_broadcastreject(uint32_t instance, bool isEna
  */
 static inline void enet_hal_set_pauseduration(uint32_t instance, uint32_t pauseDuration)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     assert(pauseDuration <= BM_ENET_OPD_PAUSE_DUR);
     BW_ENET_OPD_PAUSE_DUR(instance, pauseDuration);
 }
@@ -671,7 +674,7 @@ static inline void enet_hal_set_pauseduration(uint32_t instance, uint32_t pauseD
  */
 static inline bool enet_hal_get_rxpause_status(uint32_t instance)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     return BR_ENET_TCR_RFC_PAUSE(instance);
 }
 /*!
@@ -689,7 +692,7 @@ static inline bool enet_hal_get_rxpause_status(uint32_t instance)
  */
 static inline void enet_hal_enable_txpause(uint32_t instance, bool isEnabled)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     BW_ENET_TCR_TFC_PAUSE(instance, isEnabled);
 }
 
@@ -718,7 +721,7 @@ void enet_hal_set_txpause(uint32_t instance, uint32_t pauseDuration);
  */
 static inline void enet_hal_set_txipg(uint32_t instance, uint32_t ipgValue)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     assert(ipgValue <= BM_ENET_TIPG_IPG);
     BW_ENET_TIPG_IPG(instance, ipgValue);
 }
@@ -737,7 +740,7 @@ static inline void enet_hal_set_txipg(uint32_t instance, uint32_t ipgValue)
  */
 static inline void enet_hal_set_truncationlen(uint32_t instance, uint32_t length)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     assert(length <= BM_ENET_FTRL_TRUNC_FL);
     BW_ENET_FTRL_TRUNC_FL(instance, length);
 }
@@ -753,7 +756,7 @@ static inline void enet_hal_set_truncationlen(uint32_t instance, uint32_t length
  */
 static inline void enet_hal_set_rx_max_size(uint32_t instance, uint32_t maxBufferSize, uint32_t maxFrameSize)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     /* max buffer size must larger than 256 to minimize bus usage*/
     assert(maxBufferSize >= 256); 
     assert(maxFrameSize <= (BM_ENET_RCR_MAX_FL >> BP_ENET_RCR_MAX_FL));
@@ -790,7 +793,7 @@ void enet_hal_config_rx_fifo(uint32_t instance, enet_config_rx_fifo_t *threshold
  */
 static inline void enet_hal_set_rxbd_address(uint32_t instance, uint32_t rxBdAddr)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
 
     HW_ENET_RDSR_WR(instance,rxBdAddr);   /* Initialize receive buffer descriptor start address*/
 }
@@ -806,7 +809,7 @@ static inline void enet_hal_set_rxbd_address(uint32_t instance, uint32_t rxBdAdd
  */
 static inline void enet_hal_set_txbd_address(uint32_t instance, uint32_t txBdAddr)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
 
     HW_ENET_TDSR_WR(instance,txBdAddr);   /* Initialize transmit buffer descriptor start address*/
 }
@@ -981,7 +984,7 @@ uint32_t enet_hal_get_bd_timestamp(void *curBd);
  */
  static inline void enet_hal_active_rxbd(uint32_t instance)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
 
     HW_ENET_RDAR_SET(instance, BM_ENET_RDAR_RDAR);
 }
@@ -996,7 +999,7 @@ uint32_t enet_hal_get_bd_timestamp(void *curBd);
  */
 static inline void enet_hal_active_txbd(uint32_t instance)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
 
     HW_ENET_TDAR_SET(instance, BM_ENET_TDAR_TDAR);
 }
@@ -1032,8 +1035,8 @@ void enet_hal_config_rmii(uint32_t instance, enet_config_rmii_t mode, enet_confi
 static inline void enet_hal_config_mii(uint32_t instance, uint32_t miiSpeed, 
                               enet_mdio_holdon_clkcycle_t clkCycle, bool isPreambleDisabled)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
-	
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
+    
     BW_ENET_MSCR_MII_SPEED(instance, miiSpeed);          /* MII speed set*/
     BW_ENET_MSCR_DIS_PRE(instance, isPreambleDisabled);  /* Preamble is disabled*/
     BW_ENET_MSCR_HOLDTIME(instance, clkCycle);  /* hold on clock cycles for MDIO output*/
@@ -1053,7 +1056,7 @@ static inline void enet_hal_config_mii(uint32_t instance, uint32_t miiSpeed,
  */
 static inline bool enet_hal_is_mii_enabled(uint32_t instance)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
 
     return (HW_ENET_MSCR_RD(instance) & 0x7E)!= 0;	
 }
@@ -1066,7 +1069,7 @@ static inline bool enet_hal_is_mii_enabled(uint32_t instance)
  */
 static inline uint32_t enet_hal_get_mii_data(uint32_t instance)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
 
     return (uint32_t)BR_ENET_MMFR_DATA(instance);
 }
@@ -1110,7 +1113,7 @@ void enet_hal_config_interrupt(uint32_t instance, uint32_t source, bool isEnable
  */
 static inline void enet_hal_clear_interrupt(uint32_t instance, uint32_t source)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
  
     HW_ENET_EIR_WR(instance,source);    
 }
@@ -1127,7 +1130,7 @@ static inline void enet_hal_clear_interrupt(uint32_t instance, uint32_t source)
  */
 static inline bool enet_hal_get_interrupt_status(uint32_t instance, uint32_t source)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
 
     return ((HW_ENET_EIR_RD(instance) & source) != 0);  
 }
@@ -1140,7 +1143,7 @@ static inline bool enet_hal_get_interrupt_status(uint32_t instance, uint32_t sou
  */
 static inline void enet_hal_config_promiscuous(uint32_t instance, bool isEnabled)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
 
     BW_ENET_RCR_PROM(instance,isEnabled);	
 }
@@ -1153,7 +1156,7 @@ static inline void enet_hal_config_promiscuous(uint32_t instance, bool isEnabled
  */
 static inline void enet_hal_clear_mib(uint32_t instance, bool isEnabled)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
 
     BW_ENET_MIBC_MIB_CLEAR(instance, isEnabled);
 
@@ -1169,7 +1172,7 @@ static inline void enet_hal_clear_mib(uint32_t instance, bool isEnabled)
  */
 static inline void enet_hal_enable_mib(uint32_t instance, bool isEnabled)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
 
     BW_ENET_MIBC_MIB_DIS(instance,!isEnabled);
 
@@ -1183,7 +1186,7 @@ static inline void enet_hal_enable_mib(uint32_t instance, bool isEnabled)
  */
 static inline bool enet_hal_get_mib_status(uint32_t instance)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     
     return BR_ENET_MIBC_MIB_IDLE(instance);
 }
@@ -1228,7 +1231,7 @@ void enet_hal_init_ptp_timer(uint32_t instance, enet_config_ptp_timer_t *ptpCfgP
  */
 static inline void enet_hal_enable_ptp_timer(uint32_t instance, uint32_t isEnabled)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT); 
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
 
     BW_ENET_ATCR_EN(instance,isEnabled);                          
 }
@@ -1242,7 +1245,7 @@ static inline void enet_hal_enable_ptp_timer(uint32_t instance, uint32_t isEnabl
  */
 static inline void enet_hal_restart_ptp_timer(uint32_t instance)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT); 
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
 
     BW_ENET_ATCR_RESTART(instance,1);                          
 }
@@ -1258,7 +1261,7 @@ static inline void enet_hal_restart_ptp_timer(uint32_t instance)
  */
 static inline void enet_hal_adjust_ptp_timer(uint32_t instance, uint32_t increaseCorrection, uint32_t periodCorrection)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
 
     HW_ENET_ATINC_SET(instance,((increaseCorrection << ENET_ATINC_INC_CORR_SHIFT) & ENET_ATINC_INC_CORR_MASK));      /* set correction for ptp timer increase*/
     /* set correction for ptp timer period*/
@@ -1274,7 +1277,7 @@ static inline void enet_hal_adjust_ptp_timer(uint32_t instance, uint32_t increas
  */
 static inline void enet_hal_init_timer_channel(uint32_t instance, uint32_t channel, enet_timer_channel_mode_t mode)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     assert(channel < HW_ENET_TCSRn_COUNT);
     HW_ENET_TCSRn_SET(instance, channel, 
         (BM_ENET_TCSRn_TMODE &(mode << BP_ENET_TCSRn_TMODE)));
@@ -1306,7 +1309,7 @@ static inline void enet_hal_set_timer_channel_compare(uint32_t instance, uint32_
  */
 static inline bool enet_hal_get_timer_channel_status(uint32_t instance, uint32_t channel)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
     assert(channel < HW_ENET_TCSRn_COUNT);
 
     return BR_ENET_TCSRn_TF(instance,channel);  
@@ -1320,8 +1323,8 @@ static inline bool enet_hal_get_timer_channel_status(uint32_t instance, uint32_t
  */
 static inline void enet_hal_clear_timer_channel_flag(uint32_t instance, uint32_t channel)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
-    assert(channel < HW_ENET_TCSRn_COUNT);            
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
+    assert(channel < HW_ENET_TCSRn_COUNT);
     HW_ENET_TCSRn_SET(instance, channel, BM_ENET_TCSRn_TF);/* clear interrupt flag*/
     HW_ENET_TGSR_WR(instance,(1U << channel));            /* clear channel flag*/
 }
@@ -1350,7 +1353,7 @@ static inline void enet_hal_set_timer_capture(uint32_t instance)
  */
 static inline void enet_hal_set_current_time(uint32_t instance, uint32_t nanSecond)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
 
     HW_ENET_ATVR_WR(instance,nanSecond);
 }
@@ -1363,7 +1366,7 @@ static inline void enet_hal_set_current_time(uint32_t instance, uint32_t nanSeco
  */
 static inline uint32_t enet_hal_get_current_time(uint32_t instance)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
 
     return HW_ENET_ATVR_RD(instance);   
 }
@@ -1376,7 +1379,7 @@ static inline uint32_t enet_hal_get_current_time(uint32_t instance)
  */
 static inline uint32_t enet_hal_get_tx_timestamp(uint32_t instance)
 {
-    assert(instance < HW_ENET_INSTANCE_COUNT);
+    // assert(instance < HW_ENET_INSTANCE_COUNT);
 
     return HW_ENET_ATSTMP_RD(instance);
 }
@@ -1404,6 +1407,8 @@ static inline uint32_t enet_hal_get_bd_size(void)
 
 #if defined(__cplusplus)
 }
+#endif
+
 #endif
 
 /*! @}*/

@@ -126,7 +126,7 @@ extern "C" FILEHANDLE PREFIX(_open)(const char* name, int openmode) {
     // This is the workaround that the microlib author suggested us
     static int n = 0;
     if (!std::strcmp(name, ":tt")) return n++;
-    
+
     #else
     /* Use the posix convention that stdin,out,err are filehandles 0,1,2.
      */
@@ -141,7 +141,7 @@ extern "C" FILEHANDLE PREFIX(_open)(const char* name, int openmode) {
         return 2;
     }
     #endif
-    
+
     // find the first empty slot in filehandles
     unsigned int fh_i;
     for (fh_i = 0; fh_i < sizeof(filehandles)/sizeof(*filehandles); fh_i++) {
@@ -227,6 +227,7 @@ extern "C" int PREFIX(_read)(FILEHANDLE fh, unsigned char *buffer, unsigned int 
     if (fh < 3) {
         // only read a character at a time from stdin
 #if DEVICE_SERIAL
+        if (!stdio_uart_inited) init_serial();
         *buffer = serial_getc(&stdio_uart);
 #endif
         n = 1;
@@ -322,7 +323,15 @@ extern "C" int remove(const char *path) {
 }
 
 extern "C" int rename(const char *oldname, const char *newname) {
-    return -1;
+    FilePath fpOld(oldname);
+    FilePath fpNew(newname);
+    FileSystemLike *fsOld = fpOld.fileSystem();
+    FileSystemLike *fsNew = fpNew.fileSystem();
+
+    /* rename only if both files are on the same FS */
+    if (fsOld != fsNew || fsOld == NULL) return -1;
+
+    return fsOld->rename(fpOld.fileName(), fpNew.fileName());
 }
 
 extern "C" char *tmpnam(char *s) {
@@ -383,7 +392,7 @@ extern "C" int mkdir(const char *path, mode_t mode) {
 
 #if defined(TOOLCHAIN_GCC)
 /* prevents the exception handling name demangling code getting pulled in */
-#include "error.h"
+#include "mbed_error.h"
 namespace __gnu_cxx {
     void __verbose_terminate_handler() {
         error("Exception");
@@ -466,7 +475,7 @@ extern "C" caddr_t _sbrk(int incr) {
         errno = ENOMEM;
         return (caddr_t)-1;
     }
-    
+
     heap = new_heap;
     return (caddr_t) prev_heap;
 }

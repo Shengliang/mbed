@@ -106,7 +106,7 @@ bool USBDevice::requestGetDescriptor(void)
                                 transfer.ptr = stringImanufacturerDesc();
                                 transfer.direction = DEVICE_TO_HOST;
                                 success = true;
-                                break;       
+                                break;
                             case STRING_OFFSET_IPRODUCT:
 #ifdef DEBUG
                                 printf("3\r\n");
@@ -115,7 +115,7 @@ bool USBDevice::requestGetDescriptor(void)
                                 transfer.ptr = stringIproductDesc();
                                 transfer.direction = DEVICE_TO_HOST;
                                 success = true;
-                                break;            
+                                break;
                             case STRING_OFFSET_ISERIAL:
 #ifdef DEBUG
                                 printf("4\r\n");
@@ -124,7 +124,7 @@ bool USBDevice::requestGetDescriptor(void)
                                 transfer.ptr = stringIserialDesc();
                                 transfer.direction = DEVICE_TO_HOST;
                                 success = true;
-                                break;        
+                                break;
                             case STRING_OFFSET_ICONFIGURATION:
 #ifdef DEBUG
                                 printf("5\r\n");
@@ -133,7 +133,7 @@ bool USBDevice::requestGetDescriptor(void)
                                 transfer.ptr = stringIConfigurationDesc();
                                 transfer.direction = DEVICE_TO_HOST;
                                 success = true;
-                                break; 
+                                break;
                             case STRING_OFFSET_IINTERFACE:
 #ifdef DEBUG
                                 printf("6\r\n");
@@ -142,7 +142,7 @@ bool USBDevice::requestGetDescriptor(void)
                                 transfer.ptr = stringIinterfaceDesc();
                                 transfer.direction = DEVICE_TO_HOST;
                                 success = true;
-                                break; 
+                                break;
             }
             break;
         case INTERFACE_DESCRIPTOR:
@@ -187,7 +187,27 @@ bool USBDevice::controlOut(void)
     /* Check we should be transferring data OUT */
     if (transfer.direction != HOST_TO_DEVICE)
     {
-        return false;
+#if defined(TARGET_KL25Z) | defined(TARGET_KL46Z) | defined(TARGET_K20D5M) | defined(TARGET_K64F)
+        /*
+         * We seem to have a pending device-to-host transfer.  The host must have
+         * sent a new control request without waiting for us to finish processing
+         * the previous one.  This appears to happen when we're connected to certain 
+         * USB 3.0 host chip set. Do a zeor-length send to tell the host we're not
+         * ready for the new request - that'll make it resend - and then just
+         * pretend we were successful here so that the pending transfer can finish.
+         */
+         uint8_t buf[1] = { 0 };
+         EP0write(buf, 0);
+         
+         /* execute our pending ttransfer */
+         controlIn();
+         
+         /* indicate success */
+         return true;
+ #else
+         /* for other platforms, count on the HAL to handle this case */
+         return false;
+ #endif
     }
 
     /* Read from endpoint */
@@ -357,7 +377,7 @@ bool USBDevice::requestSetInterface(void)
     {
         success = true;
         currentInterface = transfer.setup.wIndex;
-        currentAlternate = transfer.setup.wValue;       
+        currentAlternate = transfer.setup.wValue;
     }
     return success;
 }
@@ -473,12 +493,12 @@ bool USBDevice::requestGetStatus(void)
 
     if (success)
     {
-        /* Send the status */ 
+        /* Send the status */
         transfer.ptr = (uint8_t *)&status; /* Assumes little endian */
         transfer.remaining = sizeof(status);
         transfer.direction = DEVICE_TO_HOST;
     }
-    
+
     return success;
 }
 
@@ -546,7 +566,7 @@ bool USBDevice::controlSetup(void)
     transfer.direction = 0;
     transfer.zlp = false;
     transfer.notify = false;
-    
+
 #ifdef DEBUG
     printf("dataTransferDirection: %d\r\nType: %d\r\nRecipient: %d\r\nbRequest: %d\r\nwValue: %d\r\nwIndex: %d\r\nwLength: %d\r\n",transfer.setup.bmRequestType.dataTransferDirection,
                                                                                                                                    transfer.setup.bmRequestType.Type,
@@ -593,7 +613,7 @@ bool USBDevice::controlSetup(void)
         }
         else
         {
-            
+
             /* OUT data stage is required */
             if (transfer.direction != HOST_TO_DEVICE)
             {
@@ -707,7 +727,7 @@ void USBDevice::connect(bool blocking)
 {
     /* Connect device */
     USBHAL::connect();
-    
+
     if (blocking) {
         /* Block if not configured */
         while (!configured());
@@ -718,6 +738,11 @@ void USBDevice::disconnect(void)
 {
     /* Disconnect device */
     USBHAL::disconnect();
+    
+    /* Set initial device state */
+    device.state = POWERED;
+    device.configuration = 0;
+    device.suspended = false;
 }
 
 CONTROL_TRANSFER * USBDevice::getTransferPtr(void)
@@ -793,8 +818,8 @@ void USBDevice::suspendStateChanged(unsigned int suspended)
 
 
 USBDevice::USBDevice(uint16_t vendor_id, uint16_t product_id, uint16_t product_release){
-    VENDOR_ID = vendor_id; 
-    PRODUCT_ID = product_id; 
+    VENDOR_ID = vendor_id;
+    PRODUCT_ID = product_id;
     PRODUCT_RELEASE = product_release;
 
     /* Set initial device state */
@@ -818,12 +843,12 @@ bool USBDevice::write(uint8_t endpoint, uint8_t * buffer, uint32_t size, uint32_
     {
         return false;
     }
-    
-    
+
+
     if(!configured()) {
         return false;
     }
-    
+
     /* Send report */
     result = endpointWrite(endpoint, buffer, size);
 
@@ -849,7 +874,7 @@ bool USBDevice::writeNB(uint8_t endpoint, uint8_t * buffer, uint32_t size, uint3
     {
         return false;
     }
-    
+
     if(!configured()) {
         return false;
     }
@@ -872,7 +897,7 @@ bool USBDevice::writeNB(uint8_t endpoint, uint8_t * buffer, uint32_t size, uint3
 bool USBDevice::readEP(uint8_t endpoint, uint8_t * buffer, uint32_t * size, uint32_t maxSize)
 {
     EP_STATUS result;
-    
+
     if(!configured()) {
         return false;
     }
@@ -889,13 +914,13 @@ bool USBDevice::readEP(uint8_t endpoint, uint8_t * buffer, uint32_t * size, uint
 bool USBDevice::readEP_NB(uint8_t endpoint, uint8_t * buffer, uint32_t * size, uint32_t maxSize)
 {
     EP_STATUS result;
-    
+
     if(!configured()) {
         return false;
     }
 
     result = endpointReadResult(endpoint, buffer, size);
-    
+
     return (result == EP_COMPLETED);
 }
 

@@ -15,9 +15,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 from os.path import join
+from os import getenv
 
 # Conventions about the directory structure
 from settings import ROOT, BUILD_DIR
+
+# Allow overriding some of the build parameters using environment variables
+BUILD_DIR = getenv("MBED_BUILD_DIR") or BUILD_DIR
 
 # Embedded Libraries Sources
 LIB_DIR = join(ROOT, "libraries")
@@ -68,6 +72,7 @@ UBLOX_LIBRARY = join(NET_LIBRARIES, "UbloxUSBModem")
 FS_PATH = join(LIB_DIR, "fs")
 FAT_FS = join(FS_PATH, "fat")
 SD_FS = join(FS_PATH, "sd")
+FS_LIBRARY = join(BUILD_DIR, "fat")
 
 # DSP
 DSP = join(LIB_DIR, "dsp")
@@ -88,3 +93,15 @@ EXPORT_DIR = join(BUILD_DIR, "export")
 EXPORT_WORKSPACE = join(EXPORT_DIR, "workspace")
 EXPORT_TMP = join(EXPORT_DIR, ".temp")
 
+# CppUtest library
+CPPUTEST_DIR = join(ROOT, "..")
+CPPUTEST_SRC = join(CPPUTEST_DIR, "cpputest", "src", "CppUTest")        #, "CppUTest"
+CPPUTEST_INC = join(CPPUTEST_DIR, "cpputest", "include")    #, "CppUTest"
+# Platform dependant code is here (for armcc compiler)
+CPPUTEST_PLATFORM_SRC = join(CPPUTEST_DIR, "cpputest", "src", "Platforms", "armcc")
+CPPUTEST_PLATFORM_INC = join(CPPUTEST_DIR, "cpputest", "include", "Platforms", "armcc")
+# Function 'main' used to run all compiled UTs
+CPPUTEST_TESTRUNNER_SCR = join(TEST_DIR, "utest", "testrunner")
+CPPUTEST_TESTRUNNER_INC = join(TEST_DIR, "utest", "testrunner")
+
+CPPUTEST_LIBRARY = join(BUILD_DIR, "cpputest")

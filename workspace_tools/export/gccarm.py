@@ -21,14 +21,19 @@ from os.path import splitext, basename
 class GccArm(Exporter):
     NAME = 'GccArm'
     TOOLCHAIN = 'GCC_ARM'
-    
+
     TARGETS = [
         'LPC1768',
+        'LPC1549',
         'KL05Z',
         'KL25Z',
+        'KL43Z',
         'KL46Z',
-        'K20D5M',
+        'K64F',
+        'K22F',
+        'K20D50M',
         'LPC4088',
+        'LPC4330_M4',
         'LPC11U24',
         'LPC1114',
         'LPC11U35_401',
@@ -38,14 +43,27 @@ class GccArm(Exporter):
         'DISCO_F051R8',
         'DISCO_F407VG',
         'DISCO_F303VC',
+        'UBLOX_C027',
+        'ARCH_PRO',
+        'NRF51822',
+        'LPC2368',
+        'LPCCAPPUCCINO',
+        'ARCH_BLE',
+        'MTS_GAMBIT',
+        'ARCH_MAX',
+        'NUCLEO_F401RE',
+        'NUCLEO_F411RE',
+        'ARCH_MAX',
+        'DISCO_F429ZI',
+        'NUCLEO_F334R8',
     ]
-    
+
     DOT_IN_RELATIVE_PATH = True
-    
+
     def generate(self):
         # "make" wants Unix paths
         self.resources.win_to_unix()
-        
+
         to_be_compiled = []
         for r_type in ['s_sources', 'c_sources', 'cpp_sources']:
             r = getattr(self.resources, r_type)
@@ -53,12 +71,12 @@ class GccArm(Exporter):
                 for source in r:
                     base, ext = splitext(source)
                     to_be_compiled.append(base + '.o')
-        
+
         libraries = []
         for lib in self.resources.libraries:
             l, _ = splitext(basename(lib))
             libraries.append(l[3:])
-        
+
         ctx = {
             'name': self.program_name,
             'to_be_compiled': to_be_compiled,

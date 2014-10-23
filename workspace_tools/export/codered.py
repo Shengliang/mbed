@@ -6,7 +6,7 @@ Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,21 +21,27 @@ from os.path import splitext, basename
 class CodeRed(Exporter):
     NAME = 'CodeRed'
     TOOLCHAIN = 'GCC_CR'
-    
+
     TARGETS = [
         'LPC1768',
         'LPC4088',
+        'LPC4330_M4',
         'LPC1114',
         'LPC11U35_401',
         'LPC11U35_501',
+        'UBLOX_C027',
+        'ARCH_PRO',
+        'LPC1549',
+        'LPC11U68',
+        'LPCCAPPUCCINO',
     ]
-    
+
     def generate(self):
         libraries = []
         for lib in self.resources.libraries:
             l, _ = splitext(basename(lib))
             libraries.append(l[3:])
-        
+
         ctx = {
             'name': self.program_name,
             'include_paths': self.resources.inc_dirs,

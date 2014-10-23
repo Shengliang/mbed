@@ -2,6 +2,8 @@
 
 #if defined(TARGET_LPC4088)
 InterruptIn wkp(P2_10);
+#elif defined(TARGET_K22F)
+InterruptIn wkp(D0);
 #else
 InterruptIn wkp(p14);
 #endif
@@ -12,7 +14,7 @@ void flip() {
 
 int main() {
     wkp.rise(&flip);
-    
+
     while (true) {
         // sleep();
         deepsleep();

@@ -16,7 +16,7 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#if defined(TARGET_STM32F4XX)
+#if defined(TARGET_STM32F4)
 
 #include "USBHAL.h"
 #include "USBRegs_STM32.h"
@@ -36,7 +36,7 @@ uint32_t USBHAL::endpointReadcore(uint8_t endpoint, uint8_t *buffer) {
     return 0;
 }
 
-USBHAL::USBHAL(void) {    
+USBHAL::USBHAL(void) {
     NVIC_DisableIRQ(OTG_FS_IRQn);
     epCallback[0] = &USBHAL::EP1_OUT_callback;
     epCallback[1] = &USBHAL::EP1_IN_callback;
@@ -48,6 +48,13 @@ USBHAL::USBHAL(void) {
     // Enable power and clocking
     RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
 
+#if defined(TARGET_STM32F407VG) || defined(TARGET_STM32F401RE)
+    pin_function(PA_8, STM_PIN_DATA(STM_MODE_AF_PP, GPIO_NOPULL, GPIO_AF10_OTG_FS));
+    pin_function(PA_9, STM_PIN_DATA(STM_MODE_INPUT, GPIO_PULLDOWN, GPIO_AF10_OTG_FS));
+    pin_function(PA_10, STM_PIN_DATA(STM_MODE_AF_OD, GPIO_PULLUP, GPIO_AF10_OTG_FS));
+    pin_function(PA_11, STM_PIN_DATA(STM_MODE_AF_PP, GPIO_NOPULL, GPIO_AF10_OTG_FS));
+    pin_function(PA_12, STM_PIN_DATA(STM_MODE_AF_PP, GPIO_NOPULL, GPIO_AF10_OTG_FS));
+#else
     pin_function(PA_8, STM_PIN_DATA(2, 10));
     pin_function(PA_9, STM_PIN_DATA(0, 0));
     pin_function(PA_10, STM_PIN_DATA(2, 10));
@@ -61,9 +68,10 @@ USBHAL::USBHAL(void) {
 
     // Set VBUS pin to open drain
     pin_mode(PA_9, OpenDrain);
+#endif
 
     RCC->AHB2ENR |= RCC_AHB2ENR_OTGFSEN;
-    
+
     // Enable interrupts
     OTG_FS->GREGS.GAHBCFG |= (1 << 0);
 
@@ -116,21 +124,21 @@ bool USBHAL::realiseEndpoint(uint8_t endpoint, uint32_t maxPacket,
 
     uint32_t type;
     switch (endpoint) {
-        case EP0IN:  
+        case EP0IN:
         case EP0OUT:
             type = 0;
-            break;   
+            break;
         case EPISO_IN:
         case EPISO_OUT:
-            type = 1; 
+            type = 1;
         case EPBULK_IN:
         case EPBULK_OUT:
-            type = 2;  
-            break;   
+            type = 2;
+            break;
         case EPINT_IN:
         case EPINT_OUT:
-            type = 3; 
-            break;   
+            type = 3;
+            break;
     }
 
     // Generic in or out EP controls
@@ -154,7 +162,7 @@ bool USBHAL::realiseEndpoint(uint8_t endpoint, uint32_t maxPacket,
         if (endpoint != EP0IN) {
             control |= (1 << 28); // SD0PID
         }
-        
+
         control |= (epIndex << 22) | // TxFIFO index
                    (1 << 27); // SNAK
         OTG_FS->INEP_REGS[epIndex].DIEPCTL = control;
@@ -166,7 +174,7 @@ bool USBHAL::realiseEndpoint(uint8_t endpoint, uint32_t maxPacket,
         // Set the out EP specific control settings
         control |= (1 << 26); // CNAK
         OTG_FS->OUTEP_REGS[epIndex].DOEPCTL = control;
-        
+
         // Unmask the interrupt
         OTG_FS->DREGS.DAINTMSK |= (1 << (epIndex + 16));
     }
@@ -190,7 +198,7 @@ uint32_t USBHAL::EP0getReadResult(uint8_t *buffer) {
     for (uint32_t i = 0; i < length; i += 4) {
         buffer32[i >> 2] = OTG_FS->FIFO[0][0];
     }
-                        
+
     rxFifoCount = 0;
     return length;
 }
@@ -266,7 +274,7 @@ EP_STATUS USBHAL::endpointWriteResult(uint8_t endpoint) {
         return EP_COMPLETED;
     }
 
-    return EP_PENDING; 
+    return EP_PENDING;
 }
 
 void USBHAL::stallEndpoint(uint8_t endpoint) {
@@ -282,7 +290,7 @@ void USBHAL::stallEndpoint(uint8_t endpoint) {
 }
 
 void USBHAL::unstallEndpoint(uint8_t endpoint) {
-    
+
 }
 
 bool USBHAL::getEndpointStallState(uint8_t endpoint) {

@@ -16,17 +16,20 @@
 * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
-#if defined(TARGET_LPC11U24) || defined(TARGET_LPC11U35_401) || defined(TARGET_LPC1347)
+#if defined(TARGET_LPC11UXX) || defined(TARGET_LPC11U6X) || defined(TARGET_LPC1347) || defined(TARGET_LPC1549)
 
-#if defined(TARGET_LPC1347)
+#if defined(TARGET_LPC1347) || defined(TARGET_LPC1549)
 #define USB_IRQ USB_IRQ_IRQn
-#elif defined(TARGET_LPC11U24) || defined(TARGET_LPC11U35_401)
+#else
 #define USB_IRQ USB_IRQn
 #endif
 
 #include "USBHAL.h"
 
 USBHAL * USBHAL::instance;
+#if defined(TARGET_LPC1549)
+static uint8_t usbmem[2048] __attribute__((aligned(2048)));
+#endif
 
 // Valid physical endpoint numbers are 0 to (NUMBER_OF_PHYSICAL_ENDPOINTS-1)
 #define LAST_PHYSICAL_ENDPOINT (NUMBER_OF_PHYSICAL_ENDPOINTS-1)
@@ -42,12 +45,21 @@ USBHAL * USBHAL::instance;
 #define OUT_EP(endpoint)    ((endpoint) & 1U ? false : true)
 
 // USB RAM
+#if defined(TARGET_LPC1549)
+#define USB_RAM_START ((uint32_t)usbmem)
+#define USB_RAM_SIZE  sizeof(usbmem)
+#else
 #define USB_RAM_START (0x20004000)
 #define USB_RAM_SIZE  (0x00000800)
+#endif
 
 // SYSAHBCLKCTRL
+#if defined(TARGET_LPC1549)
+#define CLK_USB     (1UL<<23)
+#else
 #define CLK_USB     (1UL<<14)
 #define CLK_USBRAM  (1UL<<27)
+#endif
 
 // USB Information register
 #define FRAME_NR(a)     ((a) & 0x7ff)   // Frame number
@@ -134,7 +146,7 @@ void USBMemCopy(uint8_t *dst, uint8_t *src, uint32_t size) {
 
 USBHAL::USBHAL(void) {
     NVIC_DisableIRQ(USB_IRQ);
-    
+
     // fill in callback array
     epCallback[0] = &USBHAL::EP1_OUT_callback;
     epCallback[1] = &USBHAL::EP1_IN_callback;
@@ -145,11 +157,42 @@ USBHAL::USBHAL(void) {
     epCallback[6] = &USBHAL::EP4_OUT_callback;
     epCallback[7] = &USBHAL::EP4_IN_callback;
 
-    #if defined(TARGET_LPC11U35_401)
+#if defined(TARGET_LPC1549)
+    /* Set USB PLL input to system oscillator */
+    LPC_SYSCON->USBPLLCLKSEL = 0x01;
+
+    /* Setup USB PLL  (FCLKIN = 12MHz) * 4 = 48MHz
+       MSEL = 3 (this is pre-decremented), PSEL = 1 (for P = 2)
+       FCLKOUT = FCLKIN * (MSEL + 1) = 12MHz * 4 = 48MHz
+       FCCO = FCLKOUT * 2 * P = 48MHz * 2 * 2 = 192MHz (within FCCO range) */
+    LPC_SYSCON->USBPLLCTRL = (0x3 | (1UL << 6));
+
+    /* Powerup USB PLL */
+    LPC_SYSCON->PDRUNCFG &= ~(CLK_USB);
+
+    /* Wait for PLL to lock */
+    while(!(LPC_SYSCON->USBPLLSTAT & 0x01));
+
+    /* enable USB main clock */
+    LPC_SYSCON->USBCLKSEL = 0x02;
+    LPC_SYSCON->USBCLKDIV = 1;
+
+    /* Enable AHB clock to the USB block. */
+    LPC_SYSCON->SYSAHBCLKCTRL1 |= CLK_USB;
+
+    /* power UP USB Phy */
+    LPC_SYSCON->PDRUNCFG &= ~(1UL << 9);
+
+    /* Reset USB block */
+    LPC_SYSCON->PRESETCTRL1 |= (CLK_USB);
+    LPC_SYSCON->PRESETCTRL1 &= ~(CLK_USB);
+
+#else
+    #if defined(TARGET_LPC11U35_401) || defined(TARGET_LPC11U35_501)
     // USB_VBUS input with pull-down
     LPC_IOCON->PIO0_3 = 0x00000009;
     #endif
-    
+
     // nUSB_CONNECT output
     LPC_IOCON->PIO0_6 = 0x00000001;
 
@@ -158,7 +201,7 @@ USBHAL::USBHAL(void) {
 
     // Ensure device disconnected (DCON not set)
     LPC_USB->DEVCMDSTAT = 0;
-
+#endif
     // to ensure that the USB host sees the device as
     // disconnected if the target CPU is reset.
     wait(0.3);
@@ -287,13 +330,13 @@ EP_STATUS USBHAL::endpointRead(uint8_t endpoint, uint32_t maximumSize) {
             bf = 0;
         }
     }
-    
+
     // if isochronous endpoint, T = 1
     if(endpointState[endpoint].options & ISOCHRONOUS)
     {
         flags |= CMDSTS_T;
     }
-        
+
     //Active the endpoint for reading
     ep[PHY_TO_LOG(endpoint)].out[bf] = CMDSTS_A | CMDSTS_NBYTES(maximumSize) \
                                        | CMDSTS_ADDRESS_OFFSET((uint32_t)ct->out) | flags;
@@ -408,7 +451,7 @@ EP_STATUS USBHAL::endpointWrite(uint8_t endpoint, uint8_t *data, uint32_t size) 
 
 EP_STATUS USBHAL::endpointWriteResult(uint8_t endpoint) {
     uint32_t bf;
-    
+
     // Validate parameters
     if (endpoint > LAST_PHYSICAL_ENDPOINT) {
         return EP_INVALID;
@@ -680,7 +723,7 @@ void USBHAL::usbisr(void) {
         // EP0IN ACK event (IN data sent)
         EP0in();
     }
-    
+
     for (uint8_t num = 2; num < 5*2; num++) {
         if (LPC_USB->INTSTAT & EP(num)) {
             LPC_USB->INTSTAT = EP(num);

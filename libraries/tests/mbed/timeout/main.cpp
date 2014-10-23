@@ -1,32 +1,11 @@
 #include "mbed.h"
 
+Timeout timer;
 DigitalOut led(LED1);
 
-#ifdef TARGET_KL25Z
-DigitalOut out(PTA1);
-
-#elif defined(TARGET_KL05Z)
-DigitalOut out(PTB1);
-
-#elif defined(TARGET_KL46Z)
-DigitalOut out(PTA1);
-
-#elif defined(TARGET_LPC812)
-DigitalOut out(P0_12);
-
-#elif defined(TARGET_LPC1114)
-DigitalOut out(LED2);
-
-#elif defined(TARGET_K64F)
-DigitalOut out(LED1);
-
-#else
-DigitalOut out(p5);
-#endif
-
-Timeout timer;
-
-#define MS_INTERVALS 1000
+namespace {
+    const int MS_INTERVALS = 1000;
+}
 
 void print_char(char c = '*')
 {
@@ -34,13 +13,13 @@ void print_char(char c = '*')
     fflush(stdout);
 }
 
-void toggleOff (void);
+void toggleOff(void);
 
-void toggleOn (void) {
+void toggleOn(void)
+{
     static int toggle_counter = 0;
-    out = 1;
-    led = 1;
     if (toggle_counter == MS_INTERVALS) {
+        led = !led;
         print_char();
         toggle_counter = 0;
     }
@@ -48,13 +27,13 @@ void toggleOn (void) {
     timer.attach_us(toggleOff, 500);
 }
 
-void toggleOff(void) {
-    out = 0;
-    led = 0;
+void toggleOff(void)
+{
     timer.attach_us(toggleOn, 500);
 }
 
-int main() {
+int main()
+{
     toggleOn();
-    while(1);
+    while (1);
 }

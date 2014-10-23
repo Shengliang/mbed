@@ -15,54 +15,48 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-import random
 import re
-from host_test import Test, DefaultTest
+import random
 from time import time
-from sys import stdout
+from host_test import DefaultTest
+
 
 class StdioTest(DefaultTest):
+    PATTERN_INT_VALUE = "Your value was: (-?\d+)"
+    re_detect_int_value = re.compile(PATTERN_INT_VALUE)
 
-    pattern_int_value = "^Your value was: (-?\d+)"
-    re_detect_int_value = re.compile(pattern_int_value)
-
-    def print_result(self, result):
-       print "\n{%s}\n{end}" % result
-
-    def run(self):
+    def test(self):
         test_result = True
 
-        for i in range(1, 5):
-            random_integer = random.randint(-10000, 10000)
-            print "Generated number: " + str(random_integer)
-            self.mbed.serial.write(str(random_integer) + "\n")
-            serial_stdio_msg = ""
+        c = self.mbed.serial_readline() # {{start}} preamble
+        if c is None:
+            return self.RESULT_IO_SERIAL
+        self.notify(c)
 
-            ip_msg_timeout = self.mbed.options.timeout
-            start_serial_pool = time();
-            while (time() - start_serial_pool) < ip_msg_timeout:
-                c = self.mbed.serial.read(512)
-                stdout.write(c)
-                stdout.flush()
-                serial_stdio_msg += c
-                # Searching for reply with scanned values
-                m = self.re_detect_int_value.search(serial_stdio_msg)
-                if m and len(m.groups()):
-                    duration = time() - start_serial_pool
-                    print "Number: " + str(m.groups()[0])
-                    test_result = test_result and (random_integer == int(m.groups()[0]))
-                    stdout.flush()
-                    break
+        for i in range(0, 10):
+            random_integer = random.randint(-99999, 99999)
+            self.notify("HOST: Generated number: " + str(random_integer))
+            start = time()
+            self.mbed.serial_write(str(random_integer) + "\n")
+
+            serial_stdio_msg = self.mbed.serial_readline()
+            if c is None:
+                return self.RESULT_IO_SERIAL
+            delay_time = time() - start
+            self.notify(serial_stdio_msg.strip())
+
+            # Searching for reply with scanned values
+            m = self.re_detect_int_value.search(serial_stdio_msg)
+            if m and len(m.groups()):
+                int_value = m.groups()[0]
+                int_value_cmp = random_integer == int(int_value)
+                test_result = test_result and int_value_cmp
+                self.notify("HOST: Number %s read after %.3f sec ... [%s]"% (int_value, delay_time, "OK" if int_value_cmp else "FAIL"))
             else:
-                print "Error: No IP and port information sent from server"
-                self.print_result('error')
-                exit(-2)
+                test_result = False
+                break
+        return self.RESULT_SUCCESS if test_result else self.RESULT_FAILURE
 
-        if test_result: # All numbers are the same
-            self.print_result('success')
-        else:
-            self.print_result('failure')
-        stdout.flush()
 
 if __name__ == '__main__':
     StdioTest().run()

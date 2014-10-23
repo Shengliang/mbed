@@ -27,13 +27,13 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *******************************************************************************
  */
+#include "mbed_assert.h"
 #include "pinmap.h"
 #include "PortNames.h"
-#include "error.h"
-#include "stm32f4xx_hal.h"
+#include "mbed_error.h"
 
 // GPIO mode look-up table
-static const uint32_t gpio_mode[12] = {
+static const uint32_t gpio_mode[13] = {
     0x00000000, //  0 = GPIO_MODE_INPUT
     0x00000001, //  1 = GPIO_MODE_OUTPUT_PP
     0x00000011, //  2 = GPIO_MODE_OUTPUT_OD
@@ -45,7 +45,8 @@ static const uint32_t gpio_mode[12] = {
     0x10310000, //  8 = GPIO_MODE_IT_RISING_FALLING
     0x10120000, //  9 = GPIO_MODE_EVT_RISING
     0x10220000, // 10 = GPIO_MODE_EVT_FALLING
-    0x10320000  // 11 = GPIO_MODE_EVT_RISING_FALLING
+    0x10320000, // 11 = GPIO_MODE_EVT_RISING_FALLING
+    0x10000000  // 12 = Reset GPIO_MODE_IT_EVT
 };
 
 // Enable GPIO clock and return GPIO base address
@@ -74,7 +75,7 @@ uint32_t Set_GPIO_Clock(uint32_t port_idx) {
             break;
         default:
             error("Pinmap error: wrong port number.");
-            break;          
+            break;
     }
     return gpio_add;
 }
@@ -83,8 +84,7 @@ uint32_t Set_GPIO_Clock(uint32_t port_idx) {
  * Configure pin (mode, speed, output type and pull-up/pull-down)
  */
 void pin_function(PinName pin, int data) {
-    if (pin == NC) return;
-
+    MBED_ASSERT(pin != (PinName)NC);
     // Get the pin informations
     uint32_t mode  = STM_PIN_MODE(data);
     uint32_t pupd  = STM_PIN_PUPD(data);
@@ -105,7 +105,7 @@ void pin_function(PinName pin, int data) {
     GPIO_InitStructure.Speed     = GPIO_SPEED_HIGH;
     GPIO_InitStructure.Alternate = afnum;
     HAL_GPIO_Init(gpio, &GPIO_InitStructure);
-    
+
     // [TODO] Disconnect JTAG-DP + SW-DP signals.
     // Warning: Need to reconnect under reset
     //if ((pin == PA_13) || (pin == PA_14)) {
@@ -113,15 +113,14 @@ void pin_function(PinName pin, int data) {
     //}
     //if ((pin == PA_15) || (pin == PB_3) || (pin == PB_4)) {
     //
-    //}    
+    //}
 }
 
 /**
  * Configure pin pull-up/pull-down
  */
 void pin_mode(PinName pin, PinMode mode) {
-    if (pin == NC) return;
-
+    MBED_ASSERT(pin != (PinName)NC);
     uint32_t port_index = STM_PORT(pin);
     uint32_t pin_index  = STM_PIN(pin);
 
@@ -131,8 +130,9 @@ void pin_mode(PinName pin, PinMode mode) {
 
     // Configure pull-up/pull-down resistors
     uint32_t pupd = (uint32_t)mode;
-    if (pupd > 2) pupd = 0; // Open-drain = No pull-up/No pull-down
+    if (pupd > 2)
+        pupd = 0; // Open-drain = No pull-up/No pull-down
     gpio->PUPDR &= (uint32_t)(~(GPIO_PUPDR_PUPDR0 << (pin_index * 2)));
     gpio->PUPDR |= (uint32_t)(pupd << (pin_index * 2));
-    
+
 }

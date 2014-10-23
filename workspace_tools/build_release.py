@@ -17,6 +17,7 @@ limitations under the License.
 import sys
 from time import time
 from os.path import join, abspath, dirname
+from optparse import OptionParser
 
 # Be sure that the tools directory is in the search path
 ROOT = abspath(join(dirname(__file__), ".."))
@@ -29,51 +30,86 @@ OFFICIAL_MBED_LIBRARY_BUILD = (
     ('LPC11U24',     ('ARM', 'uARM', 'GCC_ARM')),
     ('LPC1768',      ('ARM', 'GCC_ARM', 'GCC_CR', 'GCC_CS', 'IAR')),
     ('UBLOX_C027',   ('ARM', 'GCC_ARM', 'GCC_CR', 'GCC_CS', 'IAR')),
+    ('ARCH_PRO',     ('ARM', 'GCC_ARM', 'GCC_CR', 'GCC_CS', 'IAR')),
     ('LPC2368',      ('ARM',)),
     ('LPC812',       ('uARM',)),
+    ('LPC824',       ('uARM',)),
+    ('SSCI824',       ('uARM',)),
     ('LPC1347',      ('ARM',)),
     ('LPC4088',      ('ARM', 'GCC_ARM', 'GCC_CR')),
     ('LPC1114',      ('uARM','GCC_ARM')),
     ('LPC11U35_401', ('ARM', 'uARM','GCC_ARM','GCC_CR')),
     ('LPC11U35_501', ('ARM', 'uARM','GCC_ARM','GCC_CR')),
-    ('LPC1549',      ('uARM',)),
-    
+    ('LPC1549',      ('uARM','GCC_ARM','GCC_CR')),
+    ('XADOW_M0',     ('ARM', 'uARM','GCC_ARM','GCC_CR')),
+    ('ARCH_GPRS',    ('ARM', 'uARM', 'GCC_ARM', 'GCC_CR')),
+    ('LPC4337',      ('ARM',)),
+
     ('KL05Z',        ('ARM', 'uARM', 'GCC_ARM')),
     ('KL25Z',        ('ARM', 'GCC_ARM')),
+    ('KL43Z',        ('ARM', 'GCC_ARM')),
     ('KL46Z',        ('ARM', 'GCC_ARM')),
-    ('K64F',         ('ARM',)),
-    
-    ('NUCLEO_F103RB', ('ARM', 'uARM')),
-    ('NUCLEO_L152RE', ('ARM', 'uARM')),
-    ('NUCLEO_F401RE', ('ARM', 'uARM')),
+    ('K64F',         ('ARM', 'GCC_ARM')),
+    ('K22F',         ('ARM', 'GCC_ARM')),
+    ('K20D50M',      ('ARM', 'GCC_ARM')),
+
     ('NUCLEO_F030R8', ('ARM', 'uARM')),
+    ('NUCLEO_F072RB', ('ARM', 'uARM')),
+    ('NUCLEO_F091RC', ('ARM', 'uARM')),
+    ('NUCLEO_F103RB', ('ARM', 'uARM')),
     ('NUCLEO_F302R8', ('ARM', 'uARM')),
-    
-    ('NRF51822', ('ARM', )),
+    ('NUCLEO_F334R8', ('ARM', 'uARM')),
+    ('NUCLEO_F401RE', ('ARM', 'uARM')),
+    ('NUCLEO_F411RE', ('ARM', 'uARM', 'IAR')),
+    ('NUCLEO_L053R8', ('ARM', 'uARM')),
+    ('NUCLEO_L152RE', ('ARM', 'uARM')),
+
+    ('ARCH_MAX',     ('ARM', 'GCC_ARM')),
+
+    ('NRF51822',     ('ARM', 'GCC_ARM')),
+    ('HRM1017',      ('ARM', 'GCC_ARM')),
+    ('ARCH_BLE',     ('ARM', 'GCC_ARM')),
+    ('RBLAB_NRF51822', ('ARM', 'GCC_ARM')),
+
+    ('LPC11U68',     ('uARM','GCC_ARM','GCC_CR')),
+    ('OC_MBUINO',     ('ARM', 'uARM', 'GCC_ARM')),
 )
 
 
 if __name__ == '__main__':
+    parser = OptionParser()
+    parser.add_option('-o', '--official', dest="official_only", default=False, action="store_true",
+                      help="Build using only the official toolchain for each target")
+    parser.add_option("-j", "--jobs", type="int", dest="jobs",
+                      default=1, help="Number of concurrent jobs (default 1). Use 0 for auto based on host machine's number of CPUs")
+    parser.add_option("-v", "--verbose", action="store_true", dest="verbose",
+                      default=False, help="Verbose diagnostic output")
+    options, args = parser.parse_args()
     start = time()
     failures = []
     successes = []
-    for target_name, toolchains in OFFICIAL_MBED_LIBRARY_BUILD:
+    for target_name, toolchain_list in OFFICIAL_MBED_LIBRARY_BUILD:
+        if options.official_only:
+            toolchains = (getattr(TARGET_MAP[target_name], 'default_toolchain', 'ARM'),)
+        else:
+            toolchains = toolchain_list
         for toolchain in toolchains:
             id = "%s::%s" % (target_name, toolchain)
             try:
-                build_mbed_libs(TARGET_MAP[target_name], toolchain)
+                build_mbed_libs(TARGET_MAP[target_name], toolchain, verbose=options.verbose, jobs=options.jobs)
                 successes.append(id)
             except Exception, e:
                 failures.append(id)
                 print e
-    
+
     # Write summary of the builds
     print "\n\nCompleted in: (%.2f)s" % (time() - start)
-    
+
     if successes:
         print "\n\nBuild successes:"
         print "\n".join(["  * %s" % s for s in successes])
-    
+
     if failures:
         print "\n\nBuild failures:"
         print "\n".join(["  * %s" % f for f in failures])
+

@@ -16,8 +16,8 @@
 #include "gpio_api.h"
 #include "wait_api.h"
 #include "toolchain.h"
+#include "mbed_interface.h"
 
-WEAK void mbed_die(void);
 WEAK void mbed_die(void) {
 #ifndef NRF51_H
 	__disable_irq();	// dont allow interrupts to disturb the flash pattern
@@ -30,7 +30,7 @@ WEAK void mbed_die(void) {
     gpio_t led_3; gpio_init_out(&led_3, LED3);
     gpio_t led_4; gpio_init_out(&led_4, LED4);
 #endif
-    
+
     while (1) {
 #if   (DEVICE_ERROR_RED == 1)
         gpio_write(&led_red, 1);
@@ -41,7 +41,7 @@ WEAK void mbed_die(void) {
         gpio_write(&led_3, 0);
         gpio_write(&led_4, 1);
 #endif
-        
+
         wait_ms(150);
 
 #if   (DEVICE_ERROR_RED == 1)
@@ -53,7 +53,7 @@ WEAK void mbed_die(void) {
         gpio_write(&led_3, 1);
         gpio_write(&led_4, 0);
 #endif
-        
+
         wait_ms(150);
     }
 }

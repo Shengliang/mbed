@@ -16,6 +16,7 @@ limitations under the License.
 """
 from workspace_tools.paths import *
 from workspace_tools.data.support import *
+from workspace_tools.tests import TEST_MBED_LIB
 
 
 LIBRARIES = [
@@ -32,7 +33,7 @@ LIBRARIES = [
         "build_dir": RTOS_LIBRARIES,
         "dependencies": [MBED_LIBRARIES, MBED_RTX],
     },
-    
+
     # USB Device libraries
     {
         "id": "usb",
@@ -40,7 +41,7 @@ LIBRARIES = [
         "build_dir": USB_LIBRARIES,
         "dependencies": [MBED_LIBRARIES],
     },
-    
+
     # USB Host libraries
     {
         "id": "usb_host",
@@ -48,7 +49,7 @@ LIBRARIES = [
         "build_dir": USB_HOST_LIBRARIES,
         "dependencies": [MBED_LIBRARIES, FAT_FS, MBED_RTX, RTOS_ABSTRACTION],
     },
-    
+
     # DSP libraries
     {
         "id": "cmsis_dsp",
@@ -62,7 +63,15 @@ LIBRARIES = [
         "build_dir": DSP_LIBRARIES,
         "dependencies": [MBED_LIBRARIES, DSP_CMSIS],
     },
-    
+
+    # File system libraries
+    {
+        "id": "fat",
+        "source_dir": [FAT_FS, SD_FS],
+        "build_dir": FS_LIBRARY,
+        "dependencies": [MBED_LIBRARIES]
+    },
+
     # Network libraries
     {
         "id": "eth",
@@ -70,7 +79,7 @@ LIBRARIES = [
         "build_dir": ETH_LIBRARY,
         "dependencies": [MBED_LIBRARIES, RTOS_LIBRARIES]
     },
-    
+
     {
         "id": "ublox",
         "source_dir": [UBLOX_SOURCES, CELLULAR_SOURCES, CELLULAR_USB_SOURCES, LWIP_SOURCES],
@@ -78,6 +87,16 @@ LIBRARIES = [
         "dependencies": [MBED_LIBRARIES, RTOS_LIBRARIES, USB_HOST_LIBRARIES],
     },
 
+    # Unit Testing library
+    {
+        "id": "cpputest",
+        "source_dir": [CPPUTEST_SRC, CPPUTEST_PLATFORM_SRC, CPPUTEST_TESTRUNNER_SCR],
+        "build_dir": CPPUTEST_LIBRARY,
+        "dependencies": [MBED_LIBRARIES],
+        'inc_dirs': [CPPUTEST_INC, CPPUTEST_PLATFORM_INC, CPPUTEST_TESTRUNNER_INC, TEST_MBED_LIB],
+        'inc_dirs_ext': [CPPUTEST_INC],
+        'macros': ["CPPUTEST_USE_MEM_LEAK_DETECTION=0", "CPPUTEST_USE_STD_CPP_LIB=0", "CPPUTEST=1"],
+    },
 ]
 
 
@@ -88,11 +107,14 @@ class Library:
     DEFAULTS = {
         "supported": DEFAULT_SUPPORT,
         'dependencies': None,
+        'inc_dirs': None,       # Include dirs required by library build
+        'inc_dirs_ext': None,   # Include dirs required by others to use with this library
+        'macros': None,         # Additional macros you want to define when building library
     }
     def __init__(self, lib_id):
         self.__dict__.update(Library.DEFAULTS)
         self.__dict__.update(LIBRARY_MAP[lib_id])
-    
+
     def is_supported(self, target, toolchain):
         if not hasattr(self, 'supported'):
             return True

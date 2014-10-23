@@ -7,7 +7,7 @@ namespace mbed {
 
 typedef void (*pvoidf)(void);
 
-InterruptManager* InterruptManager::_instance = NULL;
+InterruptManager* InterruptManager::_instance = (InterruptManager*)NULL;
 
 InterruptManager* InterruptManager::get() {
     if (NULL == _instance)
@@ -25,7 +25,7 @@ void InterruptManager::destroy() {
     // is very likely to occur
     if (NULL != _instance) {
         delete _instance;
-        _instance = NULL;
+        _instance = (InterruptManager*)NULL;
     }
 }
 
@@ -58,7 +58,7 @@ pFunctionPointer_t InterruptManager::add_common(void (*function)(void), IRQn_Typ
 
 bool InterruptManager::remove_handler(pFunctionPointer_t handler, IRQn_Type irq) {
     int irq_pos = get_irq_index(irq);
-    
+
     if (NULL == _chains[irq_pos])
         return false;
     if (!_chains[irq_pos]->remove(handler))
@@ -68,7 +68,7 @@ bool InterruptManager::remove_handler(pFunctionPointer_t handler, IRQn_Type irq)
     if (_chains[irq_pos]->size() == 1 && NULL != _chains[irq_pos]->get(0)->get_function()) {
         NVIC_SetVector(irq, (uint32_t)_chains[irq_pos]->get(0)->get_function());
         delete _chains[irq_pos];
-        _chains[irq_pos] = NULL;
+        _chains[irq_pos] = (CallChain*) NULL;
     }
     return true;
 }
